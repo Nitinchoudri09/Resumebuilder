@@ -216,6 +216,69 @@
             display: none;
         }
 
+        .theme-preview {
+            margin-top: 20px;
+        }
+
+        .theme-preview h4 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .preview-box {
+            background: white;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            padding: 20px;
+            min-height: 200px;
+            transition: all 0.3s ease;
+        }
+
+        .preview-sample {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.4;
+        }
+
+        .preview-sample h5 {
+            margin: 0 0 10px 0;
+            font-size: 1.5em;
+        }
+
+        .preview-sample .contact {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+
+        .preview-sample .section-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin: 15px 0 5px 0;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 3px;
+        }
+
+        .preview-sample .item {
+            margin-bottom: 8px;
+            font-size: 0.9em;
+        }
+
+        .preview-sample .skills {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+
+        .preview-sample .skill-tag {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            background: #e8f0fe;
+            color: #667eea;
+        }
+
         @media (max-width: 768px) {
             .container {
                 margin: 10px;
@@ -347,6 +410,27 @@
                     <div class="form-group">
                         <label for="skills">Skills (comma-separated)</label>
                         <textarea id="skills" name="skills" placeholder="JavaScript, Python, React, Node.js, MongoDB, Git, AWS"></textarea>
+                    </div>
+                </section>
+
+                <!-- Theme Selection Section -->
+                <section class="section">
+                    <h2>Resume Theme</h2>
+                    <div class="form-group">
+                        <label for="resumeTheme">Choose a resume theme</label>
+                        <select id="resumeTheme" name="resumeTheme" onchange="updateThemePreview()">
+                            <option value="modern">Modern - Clean and professional</option>
+                            <option value="professional">Professional - Traditional layout</option>
+                            <option value="creative">Creative - Colorful and dynamic</option>
+                            <option value="minimal">Minimal - Simple and elegant</option>
+                            <option value="executive">Executive - Sophisticated design</option>
+                        </select>
+                    </div>
+                    <div class="theme-preview" id="themePreview">
+                        <h4>Theme Preview</h4>
+                        <div class="preview-box" id="previewBox">
+                            <!-- Theme preview will be shown here -->
+                        </div>
                     </div>
                 </section>
 
@@ -485,6 +569,7 @@
                 }
                 
                 const formData = new FormData(form);
+                const selectedTheme = formData.get('resumeTheme') || 'modern';
                 
                 // Get personal information
                 const phone = formData.get('phone') || 'Your Phone';
@@ -508,7 +593,7 @@
                 // Get skills
                 const skills = formData.get('skills') || '';
 
-                // Generate resume HTML
+                // Generate resume HTML with theme
                 let resumeHTML = `
                     <div class="resume-header">
                         <h1>${escapeHtml(fullName)}</h1>
@@ -596,8 +681,41 @@
                     }
                 }
 
-                // Display the resume
-                document.getElementById('resumePreview').innerHTML = resumeHTML;
+                // Apply theme styles to preview
+                const themeStyles = getThemeStyles(selectedTheme);
+                const themedResumeHTML = `
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>${escapeHtml(fullName)} - Resume</title>
+                        ${themeStyles}
+                    </head>
+                    <body>
+                        ${resumeHTML}
+                    </body>
+                    </html>
+                `;
+
+                // Store the themed resume for download
+                window.currentThemedResume = themedResumeHTML;
+                window.currentTheme = selectedTheme;
+
+                // Display the resume with theme
+                const previewContainer = document.getElementById('resumePreview');
+                previewContainer.innerHTML = resumeHTML;
+                
+                // Apply theme styles to preview container
+                const styleElement = document.createElement('style');
+                styleElement.textContent = themeStyles.replace(/<\/?style>/g, '');
+                
+                // Remove any existing theme styles
+                const existingStyles = previewContainer.querySelectorAll('style');
+                existingStyles.forEach(style => style.remove());
+                
+                previewContainer.appendChild(styleElement);
+                
                 document.getElementById('previewSection').classList.remove('hidden');
 
                 // Scroll to preview
@@ -673,112 +791,284 @@
         }
 
         function downloadResume() {
-            const resumeContent = document.getElementById('resumePreview').innerHTML;
             const fullName = document.getElementById('fullName').value || 'resume';
+            const selectedTheme = document.getElementById('resumeTheme').value || 'modern';
+            const themeName = themes[selectedTheme].name;
             
-            // Create a temporary HTML document for download
-            const tempHTML = `
-                <!DOCTYPE html>
-                <html lang="en">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>${fullName} - Resume</title>
-                    <style>
-                        body {
-                            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                            line-height: 1.6;
-                            color: #333;
-                            max-width: 800px;
-                            margin: 0 auto;
-                            padding: 20px;
-                        }
-                        .resume-header {
-                            text-align: center;
-                            margin-bottom: 30px;
-                            border-bottom: 2px solid #667eea;
-                            padding-bottom: 20px;
-                        }
-                        .resume-header h1 {
-                            color: #333;
-                            font-size: 2.5em;
-                            margin-bottom: 10px;
-                        }
-                        .contact-info {
-                            display: flex;
-                            justify-content: center;
-                            gap: 20px;
-                            flex-wrap: wrap;
-                            margin-top: 10px;
-                        }
-                        .contact-item {
-                            color: #666;
-                            font-size: 0.9em;
-                        }
-                        .resume-section {
-                            margin-bottom: 25px;
-                        }
-                        .resume-section h3 {
-                            color: #667eea;
-                            margin-bottom: 15px;
-                            font-size: 1.3em;
-                        }
-                        .experience-item, .education-item {
-                            margin-bottom: 15px;
-                        }
-                        .item-header {
-                            display: flex;
-                            justify-content: space-between;
-                            align-items: baseline;
-                            margin-bottom: 5px;
-                        }
-                        .item-title {
-                            font-weight: 600;
-                            color: #333;
-                        }
-                        .item-date {
-                            color: #666;
-                            font-size: 0.9em;
-                        }
-                        .item-subtitle {
-                            color: #667eea;
-                            font-style: italic;
-                            margin-bottom: 5px;
-                        }
-                        .skills-grid {
-                            display: grid;
-                            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-                            gap: 10px;
-                        }
-                        .skill-tag {
-                            background: #e8f0fe;
-                            color: #667eea;
-                            padding: 8px 15px;
-                            border-radius: 20px;
-                            text-align: center;
-                            font-size: 0.9em;
-                        }
-                        @media print {
-                            body { padding: 0; }
-                        }
-                    </style>
-                </head>
-                <body>
-                    ${resumeContent}
-                </body>
-                </html>
+            // Use the themed resume if available, otherwise generate it
+            let resumeHTML = window.currentThemedResume;
+            
+            if (!resumeHTML) {
+                // Generate resume with theme if not already generated
+                generateResume();
+                resumeHTML = window.currentThemedResume;
+            }
+            
+            if (resumeHTML) {
+                // Create blob and download
+                const blob = new Blob([resumeHTML], { type: 'text/html' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${fullName.replace(/\s+/g, '_')}_${themeName.toLowerCase()}_resume.html`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+            } else {
+                showError('Please generate your resume first before downloading.');
+            }
+        }
+
+        // Theme configurations
+        const themes = {
+            modern: {
+                name: 'Modern',
+                colors: {
+                    primary: '#2c3e50',
+                    secondary: '#3498db',
+                    accent: '#e74c3c',
+                    background: '#ffffff',
+                    text: '#2c3e50',
+                    muted: '#7f8c8d'
+                },
+                fonts: {
+                    heading: "'Helvetica Neue', Arial, sans-serif",
+                    body: "'Helvetica Neue', Arial, sans-serif"
+                },
+                layout: 'clean'
+            },
+            professional: {
+                name: 'Professional',
+                colors: {
+                    primary: '#1a1a1a',
+                    secondary: '#333333',
+                    accent: '#0066cc',
+                    background: '#ffffff',
+                    text: '#000000',
+                    muted: '#666666'
+                },
+                fonts: {
+                    heading: "'Times New Roman', serif",
+                    body: "'Times New Roman', serif"
+                },
+                layout: 'traditional'
+            },
+            creative: {
+                name: 'Creative',
+                colors: {
+                    primary: '#ff6b6b',
+                    secondary: '#4ecdc4',
+                    accent: '#45b7d1',
+                    background: '#f8f9fa',
+                    text: '#2c3e50',
+                    muted: '#7f8c8d'
+                },
+                fonts: {
+                    heading: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+                    body: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+                },
+                layout: 'colorful'
+            },
+            minimal: {
+                name: 'Minimal',
+                colors: {
+                    primary: '#000000',
+                    secondary: '#333333',
+                    accent: '#666666',
+                    background: '#ffffff',
+                    text: '#000000',
+                    muted: '#999999'
+                },
+                fonts: {
+                    heading: "'Arial', sans-serif",
+                    body: "'Arial', sans-serif"
+                },
+                layout: 'simple'
+            },
+            executive: {
+                name: 'Executive',
+                colors: {
+                    primary: '#1e3a8a',
+                    secondary: '#3730a3',
+                    accent: '#7c3aed',
+                    background: '#f8fafc',
+                    text: '#1e293b',
+                    muted: '#64748b'
+                },
+                fonts: {
+                    heading: "'Georgia', serif",
+                    body: "'Georgia', serif"
+                },
+                layout: 'sophisticated'
+            }
+        };
+
+        function updateThemePreview() {
+            const selectedTheme = document.getElementById('resumeTheme').value;
+            const previewBox = document.getElementById('previewBox');
+            const theme = themes[selectedTheme];
+            
+            const previewHTML = `
+                <div class="preview-sample" style="
+                    color: ${theme.colors.text};
+                    font-family: ${theme.fonts.body};
+                    background: ${theme.colors.background};
+                    padding: 15px;
+                    border-radius: 8px;
+                    border-left: 4px solid ${theme.colors.primary};
+                ">
+                    <h5 style="color: ${theme.colors.primary}; font-family: ${theme.fonts.heading};">John Doe</h5>
+                    <div class="contact" style="color: ${theme.colors.muted};">
+                        john.doe@email.com | (555) 123-4567 | New York, NY
+                    </div>
+                    <div class="section-title" style="color: ${theme.colors.secondary}; border-color: ${theme.colors.accent};">
+                        Professional Summary
+                    </div>
+                    <div class="item">
+                        Experienced software engineer with expertise in web development...
+                    </div>
+                    <div class="section-title" style="color: ${theme.colors.secondary}; border-color: ${theme.colors.accent};">
+                        Experience
+                    </div>
+                    <div class="item">
+                        <strong>Senior Developer</strong> - Tech Company (2020-Present)
+                    </div>
+                    <div class="section-title" style="color: ${theme.colors.secondary}; border-color: ${theme.colors.accent};">
+                        Skills
+                    </div>
+                    <div class="skills">
+                        <span class="skill-tag" style="background: ${theme.colors.accent}20; color: ${theme.colors.accent};">JavaScript</span>
+                        <span class="skill-tag" style="background: ${theme.colors.accent}20; color: ${theme.colors.accent};">Python</span>
+                        <span class="skill-tag" style="background: ${theme.colors.accent}20; color: ${theme.colors.accent};">React</span>
+                    </div>
+                </div>
             `;
             
-            // Create blob and download
-            const blob = new Blob([tempHTML], { type: 'text/html' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `${fullName.replace(/\s+/g, '_')}_resume.html`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
+            previewBox.innerHTML = previewHTML;
+        }
+
+        function getThemeStyles(themeName) {
+            const theme = themes[themeName];
+            return `
+                <style>
+                    body {
+                        font-family: ${theme.fonts.body};
+                        color: ${theme.colors.text};
+                        background: ${theme.colors.background};
+                        max-width: 800px;
+                        margin: 0 auto;
+                        padding: 40px;
+                        line-height: 1.6;
+                    }
+                    .resume-header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                        padding-bottom: 20px;
+                        border-bottom: 3px solid ${theme.colors.primary};
+                    }
+                    .resume-header h1 {
+                        color: ${theme.colors.primary};
+                        font-family: ${theme.fonts.heading};
+                        font-size: 2.5em;
+                        margin-bottom: 10px;
+                        font-weight: ${theme.layout === 'traditional' ? 'bold' : '300'};
+                    }
+                    .contact-info {
+                        display: flex;
+                        justify-content: center;
+                        gap: 20px;
+                        flex-wrap: wrap;
+                        margin-top: 15px;
+                        color: ${theme.colors.muted};
+                        font-size: 0.9em;
+                    }
+                    .resume-section {
+                        margin-bottom: 30px;
+                    }
+                    .resume-section h3 {
+                        color: ${theme.colors.secondary};
+                        font-family: ${theme.fonts.heading};
+                        font-size: 1.4em;
+                        margin-bottom: 15px;
+                        padding-bottom: 8px;
+                        border-bottom: 2px solid ${theme.colors.accent};
+                        font-weight: ${theme.layout === 'traditional' ? 'bold' : '600'};
+                    }
+                    .experience-item, .education-item {
+                        margin-bottom: 20px;
+                        padding-left: ${theme.layout === 'sophisticated' ? '20px' : '0'};
+                        border-left: ${theme.layout === 'sophisticated' ? '3px solid ' + theme.colors.accent : 'none'};
+                    }
+                    .item-header {
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: baseline;
+                        margin-bottom: 8px;
+                    }
+                    .item-title {
+                        font-weight: 600;
+                        color: ${theme.colors.text};
+                        font-size: 1.1em;
+                    }
+                    .item-date {
+                        color: ${theme.colors.muted};
+                        font-size: 0.9em;
+                        font-style: italic;
+                    }
+                    .item-subtitle {
+                        color: ${theme.colors.secondary};
+                        font-style: italic;
+                        margin-bottom: 8px;
+                        font-size: 0.95em;
+                    }
+                    .skills-grid {
+                        display: grid;
+                        grid-template-columns: repeat(auto-fill, minmax(${theme.layout === 'minimal' ? '120px' : '150px'}, 1fr));
+                        gap: ${theme.layout === 'minimal' ? '8px' : '10px'};
+                    }
+                    .skill-tag {
+                        background: ${theme.colors.accent}20;
+                        color: ${theme.colors.accent};
+                        padding: 8px 15px;
+                        border-radius: ${theme.layout === 'creative' ? '25px' : '20px'};
+                        text-align: center;
+                        font-size: 0.9em;
+                        border: ${theme.layout === 'creative' ? '2px solid ' + theme.colors.accent : 'none'};
+                        font-weight: ${theme.layout === 'executive' ? '500' : 'normal'};
+                    }
+                    ${theme.layout === 'colorful' ? `
+                        .resume-section:nth-child(even) {
+                            background: linear-gradient(135deg, ${theme.colors.background} 0%, ${theme.colors.accent}10 100%);
+                            padding: 20px;
+                            border-radius: 10px;
+                        }
+                    ` : ''}
+                    ${theme.layout === 'simple' ? `
+                        .resume-section h3 {
+                            border: none;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                        }
+                        .item-header {
+                            flex-direction: column;
+                            align-items: flex-start;
+                        }
+                    ` : ''}
+                    @media print {
+                        body { 
+                            padding: 20px;
+                            font-size: 12px;
+                        }
+                        .resume-header h1 {
+                            font-size: 2em;
+                        }
+                        .resume-section h3 {
+                            font-size: 1.2em;
+                        }
+                    }
+                </style>
+            `;
         }
 
         // Utility functions
@@ -862,9 +1152,12 @@
 
         // Add some interactivity
         document.addEventListener('DOMContentLoaded', function() {
+            // Initialize theme preview
+            updateThemePreview();
+            
             // Auto-save to localStorage
             const form = document.getElementById('resumeForm');
-            const inputs = form.querySelectorAll('input, textarea');
+            const inputs = form.querySelectorAll('input, textarea, select');
             
             // Load saved data
             const savedData = localStorage.getItem('resumeBuilderData');
@@ -886,6 +1179,11 @@
                             input.value = data[input.name];
                         }
                     });
+                    
+                    // Update theme preview after loading saved data
+                    if (data.resumeTheme) {
+                        updateThemePreview();
+                    }
                 } catch (error) {
                     console.error('Error loading saved data:', error);
                 }
@@ -895,6 +1193,9 @@
             inputs.forEach(input => {
                 input.addEventListener('input', autoSave);
             });
+            
+            // Update theme preview when theme changes
+            document.getElementById('resumeTheme').addEventListener('change', updateThemePreview);
         });
     </script>
 </body>
